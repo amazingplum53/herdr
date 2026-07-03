@@ -21,7 +21,7 @@ class Animal(models.Model):
 
     species = models.CharField(max_length=20, choices=Species.choices)
 
-    farm_id = models.CharField(max_length=100)
+    animal_id = models.CharField(max_length=100)
 
     herd = models.ForeignKey(
         Herd,
