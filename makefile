@@ -1,4 +1,4 @@
-PROJECT_NAME := drf_template
+PROJECT_NAME := herdr
 COMPOSE := docker compose -p $(PROJECT_NAME)_devcontainer -f .devcontainer/compose.yml
 
 include make/container.mk

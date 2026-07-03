@@ -3,7 +3,7 @@
   "dockerComposeFile": "compose.yml",
   "service": "dev",
   "remoteUser": "root",
-  "workspaceFolder": "/workspace/drf_template/",
+  "workspaceFolder": "/workspace/herdr/",
   "overrideCommand": true,
   "postCreateCommand": "cd react && npm install"
 }
