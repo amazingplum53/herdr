@@ -1,0 +1,12 @@
+{
+    "DOMAIN_NAME": "matthewhill.click",
+    "ALLOWED_HOSTS": ["matthewhill.click"],
+    "DEBUG": false,
+    "STATIC_URL": "https://static.matthewhill.click/",
+    "PROTOCOL": "https",
+    "DATABASE":{
+        "NAME": "prod_db",
+        "PORT": "5432",
+        "USERNAME": "prod_db"
+    }
+}

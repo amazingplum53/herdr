@@ -1,0 +1,5 @@
+*secrets.json
+*secrets.source
+**/__pycache__
+*.pyc
+*todo

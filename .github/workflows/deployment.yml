@@ -1,0 +1,64 @@
+name: Deploy
+run-name: ${{ github.actor }} deploy
+on: 
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running auto deploy"
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Load AWS Credentials
+        run: |
+          mkdir -p ~/.aws
+          echo "${{ secrets.AWS_CREDENTIALS }}" > ~/.aws/credentials
+          echo "${{ env.AWS_CONFIG }}" > ~/.aws/config
+
+      - name: Set up Docker Buildx with local driver
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker 
+      
+      - name: Start containers
+        run: docker compose -f .devcontainer/compose.yml up --detach --wait
+
+      - name: Wait for container to be ready
+        run: |
+          for i in {1..10}; do
+            docker exec dev echo "Container ready" && break || sleep 2
+          done
+
+      - name: Wait for server health check
+        run: |
+          for i in {1..10}; do
+            if curl --fail --silent http://localhost:8000/health; then
+              echo "Server is healthy"
+              exit 0
+            else
+              echo "Waiting for server..."
+              sleep 2
+            fi
+          done
+          echo "Server failed health check"
+          exit 1
+
+      - name: Run make deploy in dev container
+        run: docker exec dev bash -c "make deploy"
+
+      - name: Run django migrations
+        run: docker exec dev bash -c "make migrate_task"
+
+      - name: Clean up containers
+        run: docker compose -f .devcontainer/compose.yml down
+
+      - name: Show server health + logs on failure
+        if: failure()
+        run: |
+          docker inspect --format='{{json .State.Health}}' server | jq .
+          docker logs server || true
+

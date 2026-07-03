@@ -1,0 +1,9 @@
+{
+  "name": "Python Dev Container",
+  "dockerComposeFile": "compose.yml",
+  "service": "dev",
+  "remoteUser": "root",
+  "workspaceFolder": "/workspace/drf_template/",
+  "overrideCommand": true,
+  "postCreateCommand": "cd react && npm install"
+}

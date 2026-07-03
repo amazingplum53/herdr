@@ -1,0 +1,8 @@
+name: .pulumi
+description: A minimal AWS Python Pulumi program
+runtime: python
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
+

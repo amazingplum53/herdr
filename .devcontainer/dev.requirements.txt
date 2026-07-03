@@ -1,0 +1,6 @@
+pulumi==3.186.0
+pulumi_aws==7.1.0
+pulumi_docker==4.8.0
+PyYAML==6.0.2
+uv==0.8.3
+wheel==0.45.1
