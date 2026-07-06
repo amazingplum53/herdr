@@ -21,10 +21,7 @@ from django.http import HttpResponse, FileResponse
 from django.shortcuts import render
 import warnings
 
-
-urlpatterns = [
-    path('health/', lambda request: HttpResponse(status=204)),
-]
+urlpatterns = []
 
 if settings.STATIC_URL == "/static/":
     warnings.filterwarnings(
@@ -44,3 +41,6 @@ frontend_routes = [
 ]
 
 urlpatterns.append(path("", include(frontend_routes)))
+
+urlpatterns.append(path("api/auth/", include("user.urls")))
+urlpatterns.append(path("api/", include("herd.urls")))
