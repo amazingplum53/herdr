@@ -3,13 +3,13 @@
 from rest_framework import viewsets
 from django.db.models import Count, OuterRef, Subquery, DecimalField
 
-from .models import Farm, Herd, Pasture, Animal, WeightMeasurement
+from .models import Farm, Herd, Pasture, Animal, Measurement
 from .serializers import (
     FarmSerializer,
     HerdSerializer,
     PastureSerializer,
     AnimalSerializer,
-    WeightMeasurementSerializer,
+    MeasurementSerializer,
 )
 
 
@@ -54,7 +54,7 @@ class AnimalViewSet(viewsets.ModelViewSet):
             WeightMeasurement.objects
             .filter(animal=OuterRef("pk"))
             .order_by("-measured_at")
-            .values("weight_kg")[:1]
+            .values("weight")[:1]
         )
 
         return (
@@ -76,10 +76,10 @@ class AnimalViewSet(viewsets.ModelViewSet):
 
 
 class WeightMeasurementViewSet(viewsets.ModelViewSet):
-    serializer_class = WeightMeasurementSerializer
+    serializer_class = MeasurementSerializer
 
     def get_queryset(self):
-        return WeightMeasurement.objects.filter(
+        return Measurement.objects.filter(
             animal_id=self.kwargs["animal_pk"],
             animal__farm_id=self.kwargs["farm_pk"],
         )

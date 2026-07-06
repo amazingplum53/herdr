@@ -1,6 +1,6 @@
 from django.db.models import Count, Avg
 from rest_framework import serializers
-from .models import Farm, Herd, Pasture, Animal, WeightMeasurement
+from .models import Farm, Herd, Pasture, Animal, Measurement
 
 
 class FarmSerializer(serializers.ModelSerializer):
@@ -41,8 +41,8 @@ class AnimalSerializer(serializers.ModelSerializer):
         fields = ["id", "farm", "herd", "pasture", "animal_id", "species", "latest_weight"]
 
 
-class WeightMeasurementSerializer(serializers.ModelSerializer):
+class MeasurementSerializer(serializers.ModelSerializer):
     class Meta:
-        model = WeightMeasurement
-        fields = ["id", "animal", "weight_kg", "measured_at"]
+        model = Measurement
+        fields = ["id", "animal", "weight", "measured_at"]
         read_only_fields = ["animal"]
