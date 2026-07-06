@@ -41,7 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'herd.apps.HerdConfig'
+    "rest_framework",
+
+    'herd.apps.HerdConfig',
+    'user.apps.UserConfig'
 ]
 
 MIDDLEWARE = [    
@@ -141,3 +144,5 @@ STATIC_ROOT = BASE_DIR / "static"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = "user.User"
