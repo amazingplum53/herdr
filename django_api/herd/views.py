@@ -1,9 +1,11 @@
-# views.py
-
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
 from django.db.models import Count, OuterRef, Subquery, DecimalField
 
-from .models import Farm, Herd, Pasture, Animal, Measurement
+from .models import Farm, FarmMembership, Herd, Pasture, Animal, Measurement
 from .serializers import (
     FarmSerializer,
     HerdSerializer,
@@ -11,22 +13,40 @@ from .serializers import (
     AnimalSerializer,
     MeasurementSerializer,
 )
+from .permissions import IsFarmMember
 
 
 class FarmViewSet(viewsets.ModelViewSet):
     serializer_class = FarmSerializer
-    queryset = Farm.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Farm.objects.filter(
+            users=self.request.user
+        )
+
+    def perform_create(self, serializer):
+        farm = serializer.save()
+        FarmMembership.objects.create(
+            farm=farm,
+            user=self.request.user,
+            role="admin",
+        )
 
 
 class HerdViewSet(viewsets.ModelViewSet):
     serializer_class = HerdSerializer
+    permission_classes = [IsAuthenticated, IsFarmMember]
 
     def get_queryset(self):
-
         return (
             Herd.objects
-            .filter(farm_id=self.kwargs["farm_pk"])
+            .filter(
+                farm_id=self.kwargs["farm_pk"],
+                farm__users=self.request.user,
+            )
             .annotate(animal_count=Count("animals"))
+            .prefetch_related("animals")
         )
 
     def perform_create(self, serializer):
@@ -35,11 +55,17 @@ class HerdViewSet(viewsets.ModelViewSet):
 
 class PastureViewSet(viewsets.ModelViewSet):
     serializer_class = PastureSerializer
+    permission_classes = [IsAuthenticated, IsFarmMember]
 
     def get_queryset(self):
-        return Pasture.objects.filter(
-            farm_id=self.kwargs["farm_pk"]
-        ).prefetch_related("herds")
+        return (
+            Pasture.objects
+            .filter(
+                farm_id=self.kwargs["farm_pk"],
+                farm__users=self.request.user,
+            )
+            .prefetch_related("herds")
+        )
 
     def perform_create(self, serializer):
         serializer.save(farm_id=self.kwargs["farm_pk"])
@@ -47,42 +73,63 @@ class PastureViewSet(viewsets.ModelViewSet):
 
 class AnimalViewSet(viewsets.ModelViewSet):
     serializer_class = AnimalSerializer
+    permission_classes = [IsAuthenticated, IsFarmMember]
 
     def get_queryset(self):
-
         latest_weight = (
-            WeightMeasurement.objects
+            Measurement.objects
             .filter(animal=OuterRef("pk"))
             .order_by("-measured_at")
             .values("weight")[:1]
         )
 
-        return (
+        queryset = (
             Animal.objects
-            .filter(farm_id=self.kwargs["farm_pk"])
+            .filter(
+                herd__farm_id=self.kwargs["farm_pk"],
+                herd__farm__users=self.request.user,
+            )
             .annotate(
                 latest_weight=Subquery(
                     latest_weight,
-                    output_field=DecimalField(
-                        max_digits=7,
-                        decimal_places=2,
-                    ),
+                    output_field=DecimalField(max_digits=7, decimal_places=2),
                 )
             )
+            .select_related("herd")
         )
 
-    def perform_create(self, serializer):
-        serializer.save(farm_id=self.kwargs["farm_pk"])
+        search = self.request.query_params.get("search")
+
+        if search:
+            queryset = queryset.filter(animal_id__icontains=search)
+
+        return queryset
 
 
 class WeightMeasurementViewSet(viewsets.ModelViewSet):
     serializer_class = MeasurementSerializer
+    permission_classes = [IsAuthenticated, IsFarmMember]
 
     def get_queryset(self):
         return Measurement.objects.filter(
             animal_id=self.kwargs["animal_pk"],
-            animal__farm_id=self.kwargs["farm_pk"],
+            animal__herd__farm_id=self.kwargs["farm_pk"],
+            animal__herd__farm__users=self.request.user,
         )
 
     def perform_create(self, serializer):
         serializer.save(animal_id=self.kwargs["animal_pk"])
+
+
+class HerdPerformanceListView(APIView):
+    permission_classes = [IsAuthenticated, IsFarmMember]
+
+    def get(self, request, farm_pk, herd_pk):
+        measurements = Measurement.objects.filter(
+            animal__herd__farm_id=farm_pk,
+            animal__herd_id=herd_pk,
+            animal__herd__farm__users=request.user,
+        ).order_by("-measured_at")
+
+        serializer = MeasurementSerializer(measurements, many=True)
+        return Response(serializer.data)

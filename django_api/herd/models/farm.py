@@ -37,6 +37,8 @@ class FarmMembership(models.Model):
 
 class Pasture(models.Model):
 
+    name = models.CharField(max_length=200)
+    
     farm = models.ForeignKey(
         Farm,
         on_delete=models.CASCADE,

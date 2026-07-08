@@ -25,7 +25,7 @@ class Animal(models.Model):
 
     herd = models.ForeignKey(
         Herd,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="animals",
     )
 

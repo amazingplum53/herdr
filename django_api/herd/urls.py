@@ -1,5 +1,7 @@
-# urls.py
+from django.urls import path
+
 from rest_framework_nested import routers
+
 from .views import FarmViewSet, HerdViewSet, PastureViewSet, AnimalViewSet, WeightMeasurementViewSet
 
 router = routers.DefaultRouter()
@@ -11,6 +13,14 @@ farm_router.register("pastures", PastureViewSet, basename="farm-pastures")
 farm_router.register("animals", AnimalViewSet, basename="farm-animals")
 
 animal_router = routers.NestedDefaultRouter(farm_router, "animals", lookup="animal")
-animal_router.register("weights", WeightMeasurementViewSet, basename="animal-weights")
+animal_router.register("measurements", WeightMeasurementViewSet, basename="animal-weights")
 
 urlpatterns = router.urls + farm_router.urls + animal_router.urls
+
+urlpatterns.append(
+    path(
+        "api/farms/<int:farm_pk>/animals/<int:animal_pk>/measurements/",
+        AnimalMeasurementListView.as_view(),
+        name="animal-measurements",
+    ),
+)
