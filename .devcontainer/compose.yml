@@ -20,6 +20,9 @@ services:
     command: ["bash", "-lc", "sleep infinity"]
 
   server:
+    depends_on:
+      database:
+        condition: service_healthy
     build:
       dockerfile: .devcontainer/server.dockerfile
       context: ./..
