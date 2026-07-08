@@ -14,17 +14,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse, FileResponse
 from django.shortcuts import render
 import warnings
 
-
-urlpatterns = [
-    path('health/', lambda request: HttpResponse(status=204)),
-]
+urlpatterns = []
 
 if settings.STATIC_URL == "/static/":
     warnings.filterwarnings(
@@ -35,12 +32,10 @@ if settings.STATIC_URL == "/static/":
         static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     )
 
+urlpatterns.append(path("api/auth/", include("user.urls")))
+urlpatterns.append(path("api/", include("herd.urls")))
 
 def frontend(request):
     return render(request, "index.html")
 
-frontend_routes = [
-    path("auth/signup/", frontend),
-]
-
-urlpatterns.append(path("", include(frontend_routes)))
+urlpatterns.append(re_path(r"^(?!api/).*",frontend))
