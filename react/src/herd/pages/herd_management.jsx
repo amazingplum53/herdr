@@ -1,11 +1,20 @@
-// src/farm/herd_page.jsx
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
 import LogoutButton from "../../user/logout_button";
 import { getHerd } from "../api/herds";
 import { createAnimal } from "../api/animals";
+import { getHerdPerformance } from "../api/measurements";
 
 const ANIMALS_PER_PAGE = 10;
 
@@ -16,6 +25,7 @@ export default function HerdManagmentPage() {
   const [species, setSpecies] = useState("");
   const [animals, setAnimals] = useState([]);
   const [page, setPage] = useState(1);
+  const [performance, setPerformance] = useState([]);
   const [error, setError] = useState("");
 
   async function handleAddAnimal(event) {
@@ -41,22 +51,37 @@ export default function HerdManagmentPage() {
 
   useEffect(() => {
   async function loadHerd() {
-      setError("");
+    setError("");
 
-      try {
-      const response = await getHerd(farmId, herdId);
+    try {
+      const herdResponse = await getHerd(farmId, herdId);
 
-      if (!response.ok) {
-          setError("Could not load herd.");
-          return;
+      if (!herdResponse.ok) {
+        setError("Could not load herd.");
+        return;
       }
 
-      const herd = await response.json();
-
+      const herd = await herdResponse.json();
       setAnimals(herd.animals || []);
-      } catch {
-      setError("Could not load herd.");
+
+      const performanceResponse = await getHerdPerformance(farmId, herdId);
+
+      if (!performanceResponse.ok) {
+        setError("Could not load herd performance.");
+        return;
       }
+
+      const performanceData = await performanceResponse.json();
+
+      setPerformance(
+        performanceData.map((point) => ({
+          date: point.date,
+          average_weight: Number(point.average_weight),
+        }))
+      );
+    } catch {
+      setError("Could not load herd.");
+    }
   }
 
   loadHerd();
@@ -141,6 +166,28 @@ export default function HerdManagmentPage() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      <h2>Herd weight history</h2>
+
+      {performance.length === 0 ? (
+        <p>No measurements yet.</p>
+      ) : (
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={performance}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="average_weight"
+                name="Average Weight (kg)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
     </main>

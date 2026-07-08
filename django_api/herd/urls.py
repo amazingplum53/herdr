@@ -2,7 +2,7 @@ from django.urls import path
 
 from rest_framework_nested import routers
 
-from .views import FarmViewSet, HerdViewSet, PastureViewSet, AnimalViewSet, WeightMeasurementViewSet
+from .views import FarmViewSet, HerdViewSet, PastureViewSet, AnimalViewSet, WeightMeasurementViewSet, HerdPerformanceListView
 
 router = routers.DefaultRouter()
 router.register("farms", FarmViewSet, basename="farm")
@@ -19,8 +19,8 @@ urlpatterns = router.urls + farm_router.urls + animal_router.urls
 
 urlpatterns.append(
     path(
-        "api/farms/<int:farm_pk>/animals/<int:animal_pk>/measurements/",
-        AnimalMeasurementListView.as_view(),
-        name="animal-measurements",
+        "farms/<int:farm_pk>/herds/<int:herd_pk>/performance/",
+        HerdPerformanceListView.as_view(),
+        name="herd-performance",
     ),
 )

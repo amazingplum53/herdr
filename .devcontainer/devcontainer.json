@@ -5,5 +5,5 @@
   "remoteUser": "root",
   "workspaceFolder": "/workspace/herdr/",
   "overrideCommand": true,
-  "postCreateCommand": "cd react && npm install"
+  "postCreateCommand": "cd react && npm install && npm install recharts"
 }

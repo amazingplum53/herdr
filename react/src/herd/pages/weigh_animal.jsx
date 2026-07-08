@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
 import { searchAnimals } from "../api/animals";
-import { createMeasurement } from "../api/measurements";
+import { createMeasurement, getMeasurements } from "../api/measurements";
 
 export default function WeighAnimalPage() {
   const { farmId } = useParams();
@@ -10,10 +19,29 @@ export default function WeighAnimalPage() {
   const [search, setSearch] = useState("");
   const [animals, setAnimals] = useState([]);
   const [selectedAnimal, setSelectedAnimal] = useState(null);
+  const [measurements, setMeasurements] = useState([]);
   const [weight, setWeight] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  async function loadMeasurements(animalId) {
+    const response = await getMeasurements(farmId, animalId);
+
+    if (!response.ok) {
+      throw new Error("Could not load measurements.");
+    }
+
+    const data = await response.json();
+
+    setMeasurements(
+      data.map((measurement) => ({
+        ...measurement,
+        weight: Number(measurement.weight),
+        date: new Date(measurement.measured_at).toLocaleDateString(),
+      }))
+    );
+  }
 
   async function handleSearch(event) {
     event.preventDefault();
@@ -21,18 +49,31 @@ export default function WeighAnimalPage() {
     setError("");
     setSuccess("");
     setSelectedAnimal(null);
+    setMeasurements([]);
 
     try {
       const response = await searchAnimals(farmId, search);
 
       if (!response.ok) {
-      throw new Error("Could not search animals.");
+        throw new Error("Could not search animals.");
       }
 
       const results = await response.json();
       setAnimals(results);
     } catch {
       setError("Could not search animals.");
+    }
+  }
+
+  async function handleSelectAnimal(animal) {
+    setSelectedAnimal(animal);
+    setSuccess("");
+    setError("");
+
+    try {
+      await loadMeasurements(animal.id);
+    } catch {
+      setError("Could not load measurements.");
     }
   }
 
@@ -53,33 +94,30 @@ export default function WeighAnimalPage() {
     setSuccess("");
 
     try {
-      const response = await createMeasurement(
-        farmId,
-        selectedAnimal.id,
-        {
-          weight,
-          measured_at: new Date().toISOString()
-        }
-      );
+      const response = await createMeasurement(farmId, selectedAnimal.id, {
+        weight,
+        measured_at: new Date().toISOString(),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.log(errorData);
         throw new Error("Could not save measurement.");
       }
 
       setSuccess(`Saved ${weight} kg for ${selectedAnimal.animal_id}.`);
       setWeight("");
-    } catch (error) {
+
+      await loadMeasurements(selectedAnimal.id);
+    } catch {
       setError("Could not save measurement.");
     }
   }
-  
+
   return (
     <main>
       <p>
         <Link to={`/farms/${farmId}`}>Back to Farm</Link>
       </p>
+
       <h1>Weigh Animal</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
@@ -106,14 +144,7 @@ export default function WeighAnimalPage() {
         <ul>
           {animals.map((animal) => (
             <li key={animal.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedAnimal(animal);
-                  setSuccess("");
-                  setError("");
-                }}
-              >
+              <button type="button" onClick={() => handleSelectAnimal(animal)}>
                 {animal.animal_id} — {animal.species} — Latest weight:{" "}
                 {animal.latest_weight ?? "None"} kg
               </button>
@@ -129,9 +160,11 @@ export default function WeighAnimalPage() {
           <p>
             <strong>ID:</strong> {selectedAnimal.animal_id}
           </p>
+
           <p>
             <strong>Species:</strong> {selectedAnimal.species}
           </p>
+
           <p>
             <strong>Latest weight:</strong>{" "}
             {selectedAnimal.latest_weight ?? "None"} kg
@@ -150,6 +183,24 @@ export default function WeighAnimalPage() {
 
             <button type="submit">Save measurement</button>
           </form>
+
+          <h2>Weight history</h2>
+
+          {measurements.length === 0 ? (
+            <p>No measurements yet.</p>
+          ) : (
+            <div style={{ width: "100%", height: 300 }}>
+              <ResponsiveContainer>
+                <LineChart data={measurements}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="weight" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </section>
       )}
     </main>

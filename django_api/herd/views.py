@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from django.db.models import Count, OuterRef, Subquery, DecimalField
+from django.db.models import Count, OuterRef, Subquery, DecimalField, Avg
+from django.db.models.functions import TruncDate
 
 from .models import Farm, FarmMembership, Herd, Pasture, Animal, Measurement
 from .serializers import (
@@ -115,7 +116,7 @@ class WeightMeasurementViewSet(viewsets.ModelViewSet):
             animal_id=self.kwargs["animal_pk"],
             animal__herd__farm_id=self.kwargs["farm_pk"],
             animal__herd__farm__users=self.request.user,
-        )
+        ).order_by("measured_at")
 
     def perform_create(self, serializer):
         serializer.save(animal_id=self.kwargs["animal_pk"])
@@ -125,11 +126,18 @@ class HerdPerformanceListView(APIView):
     permission_classes = [IsAuthenticated, IsFarmMember]
 
     def get(self, request, farm_pk, herd_pk):
-        measurements = Measurement.objects.filter(
-            animal__herd__farm_id=farm_pk,
-            animal__herd_id=herd_pk,
-            animal__herd__farm__users=request.user,
-        ).order_by("-measured_at")
+        measurements = (
+            Measurement.objects.filter(
+                animal__herd__farm_id=farm_pk,
+                animal__herd_id=herd_pk,
+                animal__herd__farm__users=request.user,
+            )
+            .annotate(date=TruncDate("measured_at"))
+            .values("date")
+            .annotate(
+                average_weight=Avg("weight"),
+            )
+            .order_by("date")
+        )
 
-        serializer = MeasurementSerializer(measurements, many=True)
-        return Response(serializer.data)
+        return Response(measurements)
