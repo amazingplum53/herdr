@@ -59,6 +59,7 @@ jobs:
       - name: Show server health + logs on failure
         if: failure()
         run: |
-          docker inspect --format='{{json .State.Health}}' server | jq .
-          docker logs server || true
+          docker compose -f .devcontainer/compose.yml ps
+          docker compose -f .devcontainer/compose.yml logs database
+          docker compose -f .devcontainer/compose.yml logs server
 
