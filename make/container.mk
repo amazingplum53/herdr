@@ -11,7 +11,7 @@ logs:
 	$(COMPOSE) logs --follow $(SERVICE)
 
 test:
-	$(COMPOSE) exec $(SERVICE) python ./django_api/manage.py test 
+	$(COMPOSE) exec $(SERVICE) sh -c "cd django_api && python manage.py test"
 
 restart:
 	$(COMPOSE) restart $(SERVICE)
